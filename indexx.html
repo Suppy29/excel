@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RCC01 Student Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .card-shadow {
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        .fade-in-actions {
+            opacity: 0;
+            transform: translateY(5px);
+            transition: all 0.3s ease;
+        }
+        
+        .table-row:hover .fade-in-actions {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .table-row {
+            transition: all 0.2s ease;
+        }
+        
+        .table-row:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .modal-backdrop {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+        
+        .expired-row {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%) !important;
+            border-left: 4px solid #ef4444;
+        }
+        
+        .active-row {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important;
+            border-left: 4px solid #22c55e;
+        }
+        
+        .premium-row {
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%) !important;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .expiring-soon-row {
+            background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%) !important;
+            border-left: 4px solid #f97316;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.35);
+        }
+        
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
+            transform: translateY(-1px);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+        }
+        
+        .btn-success:hover {
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+            transform: translateY(-1px);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+        }
+        
+        .btn-warning:hover {
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
+            transform: translateY(-1px);
+        }
+
+        .btn-purple {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.35);
+        }
+        
+        .btn-purple:hover {
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.45);
+            transform: translateY(-1px);
+        }
+        
+        .input-focus {
+            transition: all 0.3s ease;
+        }
+        
+        .input-focus:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-active {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+        }
+        
+        .status-expired {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+        
+        .status-premium {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .status-expiring {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            color: white;
+        }
+        
+        .metric-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
+            backdrop-filter: blur(20px);
+        }
+
+        .drag-drop-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .drag-drop-area.dragover {
+            border-color: rgba(59, 130, 246, 0.8);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .slide-in {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .filter-chip {
+            transition: all 0.2s ease;
+        }
+
+        .filter-chip:hover {
+            transform: translateY(-1px);
+        }
+
+        .filter-chip.active {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen">
+    <!-- Floating Background Elements -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-300 opacity-20 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="relative z-10 container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-12 slide-in">
+            <h1 class="text-6xl font-bold text-white mb-4 tracking-tight">
+                RCC01 
+                <span class="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                    Dashboard
+                </span>
+            </h1>
+            <p class="text-xl text-white/80 font-light">Premium Student Management System</p>
+            <div class="w-24 h-1 bg-gradient-to-r from-blue-400 to-purple-500 mx-auto mt-6 rounded-full"></div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8 slide-in">
+            <div class="metric-card rounded-2xl p-6 card-shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm font-medium">Total Students</p>
+                        <p class="text-3xl font-bold text-gray-800" id="totalStudents">0</p>
+                    </div>
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="metric-card rounded-2xl p-6 card-shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm font-medium">Active Players</p>
+                        <p class="text-3xl font-bold text-green-600" id="activeStudents">0</p>
+                    </div>
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="metric-card rounded-2xl p-6 card-shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm font-medium">Premium Members</p>
+                        <p class="text-3xl font-bold text-yellow-600" id="premiumStudents">0</p>
+                    </div>
+                    <div class="bg-yellow-100 p-3 rounded-full">
+                        <svg class="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card rounded-2xl p-6 card-shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm font-medium">Expiring Soon</p>
+                        <p class="text-3xl font-bold text-orange-600" id="expiringSoon">0</p>
+                    </div>
+                    <div class="bg-orange-100 p-3 rounded-full">
+                        <svg class="w-6 h-6 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="metric-card rounded-2xl p-6 card-shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm font-medium">Expired</p>
+                        <p class="text-3xl font-bold text-red-600" id="expiredStudents">0</p>
+                    </div>
+                    <div class="bg-red-100 p-3 rounded-full">
+                        <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Form -->
+        <div class="bg-white/10 backdrop-filter backdrop-blur-lg rounded-3xl p-8 mb-8 card-shadow slide-in">
+            <div class="flex items-center mb-6">
+                <div class="bg-blue-500 p-3 rounded-2xl mr-4">
+                    <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-white">Add New Student</h2>
+            </div>
+            
+            <form id="studentForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-white/90">Student Name</label>
+                    <input type="text" id="studentName" 
+                           class="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 input-focus focus:bg-white/30 focus:border-white/60 transition-all duration-300" 
+                           placeholder="Enter full name" required>
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-white/90">Membership Plan</label>
+                    <select id="studentPlan" 
+                            class="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white input-focus focus:bg-white/30 focus:border-white/60 transition-all duration-300" required>
+                        <option value="" class="text-gray-800">Choose Plan</option>
+                        <option value="Twice a week" class="text-gray-800">Twice a week</option>
+                        <option value="Four times a week" class="text-gray-800">Four times a week</option>
+                        <option value="Everyday" class="text-gray-800">Everyday</option>
+                        <option value="Premium" class="text-gray-800">Premium</option>
+                    </select>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-white/90">Monthly Fees</label>
+                    <input type="number" id="studentFees" 
+                           class="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 input-focus focus:bg-white/30 focus:border-white/60 transition-all duration-300" 
+                           placeholder="Enter fees" required>
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-white/90">Recent Payment</label>
+                    <input type="date" id="recentPayment" 
+                           class="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white input-focus focus:bg-white/30 focus:border-white/60 transition-all duration-300" required>
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-white/90">Expiry Date</label>
+                    <input type="date" id="expiryDate" 
+                           class="w-full px-4 py-3 bg-white/20 border border-white/30 rounded-xl text-white input-focus focus:bg-white/30 focus:border-white/60 transition-all duration-300" required>
+                </div>
+                
+                <div class="flex items-end">
+                    <button type="submit" 
+                            class="w-full btn-primary text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/>
+                        </svg>
+                        <span>Add Student</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Quick Actions & Import/Export -->
+        <div class="bg-white/5 backdrop-filter backdrop-blur-lg rounded-3xl p-8 mb-8 card-shadow slide-in">
+            <div class="flex flex-wrap items-center justify-between mb-6">
+                <h3 class="text-2xl font-bold text-white flex items-center">
+                    <svg class="w-7 h-7 mr-3 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"/>
+                    </svg>
+                    Quick Actions
+                </h3>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <button id="clearAllBtn" 
+                        class="btn-warning text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 012 0v6a1 1 0 11-2 0V7zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V7z"/>
+                    </svg>
+                    <span>Clear All Data</span>
+                </button>
+
+                <button id="addSampleBtn" 
+                        class="btn-purple text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>Add Sample Data</span>
+                </button>
+
+                <button id="exportBtn" 
+                        class="btn-success text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"/>
+                    </svg>
+                    <span>Export Excel</span>
+                </button>
+
+                <label class="btn-primary text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center space-x-2 cursor-pointer">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"/>
+                    </svg>
+                    <span>Import Excel</span>
+                    <input type="file" id="importFile" accept=".xlsx,.xls" class="hidden">
+                </label>
+            </div>
+
+            <!-- Drag and Drop Area -->
+            <div id="dragDropArea" class="drag-drop-area rounded-2xl p-8 text-center">
+                <svg class="w-12 h-12 text-white/40 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"/>
+                </svg>
+                <p class="text-white/60 text-lg mb-2">Drag & Drop Excel Files Here</p>
+                <p class="text-white/40 text-sm">Or click Import Excel button above</p>
+            </div>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="bg-white/5 backdrop-filter backdrop-blur-lg rounded-3xl p-6 mb-8 card-shadow slide-in">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center space-x-4">
+                    <h4 class="text-lg font-semibold text-white">Filters:</h4>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="filter-chip active px-4 py-2 rounded-full text-sm font-medium bg-white/20 text-white border border-white/30" data-filter="all">
+                            All Students
+                        </button>
+                        <button class="filter-chip px-4 py-2 rounded-full text-sm font-medium bg-white/20 text-white border border-white/30" data-filter="active">
+                            Active
+                        </button>
+                        <button class="filter-chip px-4 py-2 rounded-full text-sm font-medium bg-white/20 text-white border border-white/30" data-filter="expired">
+                            Expired
+                        </button>
+                        <button class="filter-chip px-4 py-2 rounded-full text-sm font-medium bg-white/20 text-white border border-white/30" data-filter="premium">
+                            Premium
+                        </button>
+                        <button class="filter-chip px-4 py-2 rounded-full text-sm font-medium bg-white/20 text-white border border-white/30" data-filter="expiring">
+                            Expiring Soon
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <input type="text" id="searchInput" 
+                           class="px-4 py-2 bg-white/20 border border-white/30 rounded-xl text-white placeholder-white/60 focus:bg-white/30 focus:border-white/60 transition-all duration-300" 
+                           placeholder="Search students...">
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Table -->
+        <div class="bg-white/5 backdrop-filter backdrop-blur-lg rounded-3xl overflow-hidden card-shadow slide-in">
+            <div class="bg-white/10 px-8 py-6 border-b border-white/20">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-2xl font-bold text-white flex items-center">
+                        <svg class="w-7 h-7 mr-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"/>
+                        </svg>
+                        Student Registry
+                    </h3>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-white/60 text-sm">Showing:</span>
+                        <span id="showingCount" class="text-white font-semibold">0 students</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-white/10">
+                        <tr>
+                            <th class="px-8 py-4 text-left text-sm font-bold text-white/90 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTableBody" class="divide-y divide-white/10">
+                        <!-- Student rows will be inserted here -->
+                    </tbody>
+                </table>
+                
+                <div id="emptyState" class="hidden py-16 text-center">
+                    <svg class="w-16 h-16 text-white/30 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 100-2 1 1 0 000 2zm7-1a1 1 0 11-2 0 1 1 0 012 0zm-7.536 5.879a1 1 0 001.415 0 3 3 0 014.242 0 1 1 0 001.415-1.415 5 5 0 00-7.072 0 1 1 0 000 1.415z"/>
+                    </svg>
+                    <p class="text-white/60 text-lg">No students found</p>
+                    <p class="text-white/40 text-sm mt-2">Try adjusting your filters or add new students</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-backdrop fixed inset-0"></div>
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md relative transform transition-all">
+                <div class="flex items-center mb-6">
+                    <div class="bg-blue-500 p-3 rounded-2xl mr-4">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800">Edit Student</h3>
+                </div>
+                
+                <form id="editForm" class="space-y-6">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-700">Student Name</label>
+                        <input type="text" id="editName" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300">
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-700">Membership Plan</label>
+                        <select id="editPlan" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300">
+                            <option value="Twice a week">Twice a week</option>
+                            <option value="Four times a week">Four times a week</option>
+                            <option value="Everyday">Everyday</option>
+                            <option value="Premium">Premium</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-700">Monthly Fees</label>
+                        <input type="number" id="editFees" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300">
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-700">Recent Payment</label>
+                        <input type="date" id="editRecentPayment" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300">
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <label class="block text-sm font-semibold text-gray-700">Expiry Date</label>
+                        <input type="date" id="editExpiryDate" 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300">
+                    </div>
+                    
+                    <div class="flex justify-end space-x-4 pt-6">
+                        <button type="button" id="cancelEdit" 
+                                class="px-6 py-3 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 transition-all duration-300 font-semibold">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all duration-300 font-semibold">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class StudentDashboard {
+            constructor() {
+                this.students = [];
+                this.filteredStudents = [];
+                this.editingIndex = -1;
+                this.currentFilter = 'all';
+                this.currentSearch = '';
+                this.sortField = null;
+                this.sortDirection = 'asc';
+                this.initializeEventListeners();
+                this.renderTable();
+                this.updateMetrics();
+            }
+
+            initializeEventListeners() {
+                // Form submissions
+                document.getElementById('studentForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.addStudent();
+                });
+
+                document.getElementById('editForm').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.updateStudent();
+                });
+
+                // Modal controls
+                document.getElementById('cancelEdit').addEventListener('click', () => {
+                    this.hideEditModal();
+                });
+
+                document.querySelector('.modal-backdrop').addEventListener('click', () => {
+                    this.hideEditModal();
+                });
+
+                // Action buttons
+                document.getElementById('exportBtn').addEventListener('click', () => {
+                    this.exportToExcel();
+                });
+
+                document.getElementById('clearAllBtn').addEventListener('click', () => {
+                    this.clearAllData();
+                });
+
+                document.getElementById('addSampleBtn').addEventListener('click', () => {
+                    this.addSampleData();
+                });
+
+                // File import
+                document.getElementById('importFile').addEventListener('change', (e) => {
+                    this.importFromExcel(e.target.files[0]);
+                });
+
+                // Drag and drop
+                const dragDropArea = document.getElementById('dragDropArea');
+                
+                dragDropArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dragDropArea.classList.add('dragover');
+                });
+
+                dragDropArea.addEventListener('dragleave', () => {
+                    dragDropArea.classList.remove('dragover');
+                });
+
+                dragDropArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dragDropArea.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        this.importFromExcel(files[0]);
+                    }
+                });
+
+                // Filters
+                document.querySelectorAll('.filter-chip').forEach(chip => {
+                    chip.addEventListener('click', (e) => {
+                        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentFilter = e.target.dataset.filter;
+                        this.applyFiltersAndSearch();
+                    });
+                });
+
+                // Search
+                document.getElementById('searchInput').addEventListener('input', (e) => {
+                    this.currentSearch = e.target.value.toLowerCase();
+                    this.applyFiltersAndSearch();
+                });
+
+                // Sorting
+                document.querySelectorAll('th[data-sort]').forEach(th => {
+                    th.addEventListener('click', () => {
+                        const field = th.dataset.sort;
+                        if (this.sortField === field) {
+                            this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+                        } else {
+                            this.sortField = field;
+                            this.sortDirection = 'asc';
+                        }
+                        this.applyFiltersAndSearch();
+                    });
+                });
+            }
+
+            addStudent() {
+                const name = document.getElementById('studentName').value;
+                const plan = document.getElementById('studentPlan').value;
+                const fees = document.getElementById('studentFees').value;
+                const recentPayment = document.getElementById('recentPayment').value;
+                const expiryDate = document.getElementById('expiryDate').value;
+
+                const student = {
+                    id: Date.now(),
+                    name,
+                    plan,
+                    fees: parseFloat(fees),
+                    recentPayment,
+                    expiryDate
+                };
+
+                this.students.push(student);
+                this.applyFiltersAndSearch();
+                this.updateMetrics();
+                this.clearForm();
+                this.showSuccessMessage('Student added successfully!');
+            }
+
+            clearForm() {
+                document.getElementById('studentForm').reset();
+            }
+
+            applyFiltersAndSearch() {
+                let filtered = [...this.students];
+
+                // Apply search filter
+                if (this.currentSearch) {
+                    filtered = filtered.filter(student => 
+                        student.name.toLowerCase().includes(this.currentSearch) ||
+                        student.plan.toLowerCase().includes(this.currentSearch)
+                    );
+                }
+
+                // Apply status filter
+                if (this.currentFilter !== 'all') {
+                    const today = new Date().toISOString().split('T')[0];
+                    const sevenDaysFromNow = new Date();
+                    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+                    const sevenDaysFromNowString = sevenDaysFromNow.toISOString().split('T')[0];
+
+                    filtered = filtered.filter(student => {
+                        const isExpired = student.expiryDate < today;
+                        const isPremium = student.plan === 'Premium';
+                        const isExpiringSoon = student.expiryDate >= today && student.expiryDate <= sevenDaysFromNowString && !isPremium;
+                        const isActive = student.expiryDate >= today && !isPremium && !isExpiringSoon;
+
+                        switch (this.currentFilter) {
+                            case 'active': return isActive;
+                            case 'expired': return isExpired;
+                            case 'premium': return isPremium;
+                            case 'expiring': return isExpiringSoon;
+                            default: return true;
+                        }
+                    });
+                }
+
+                // Apply sorting
+                if (this.sortField) {
+                    filtered.sort((a, b) => {
+                        let aVal, bVal;
+                        
+                        switch (this.sortField) {
+                            case 'name':
+                                aVal = a.name.toLowerCase();
+                                bVal = b.name.toLowerCase();
+                                break;
+                            case 'plan':
+                                aVal = a.plan;
+                                bVal = b.plan;
+                                break;
+                            case 'fees':
+                                aVal = a.fees || 0;
+                                bVal = b.fees || 0;
+                                break;
+                            case 'payment':
+                                aVal = new Date(a.recentPayment);
+                                bVal = new Date(b.recentPayment);
+                                break;
+                            case 'expiry':
+                                aVal = new Date(a.expiryDate);
+                                bVal = new Date(b.expiryDate);
+                                break;
+                            default:
+                                return 0;
+                        }
+
+                        if (aVal < bVal) return this.sortDirection === 'asc' ? -1 : 1;
+                        if (aVal > bVal) return this.sortDirection === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                }
+
+                this.filteredStudents = filtered;
+                this.renderTable();
+                this.updateShowingCount();
+            }
+
+            renderTable() {
+                const tbody = document.getElementById('studentTableBody');
+                const emptyState = document.getElementById('emptyState');
+                
+                if (this.filteredStudents.length === 0) {
+                    tbody.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+
+                emptyState.classList.add('hidden');
+                tbody.innerHTML = '';
+
+                this.filteredStudents.forEach((student, index) => {
+                    const row = document.createElement('tr');
+                    row.className = 'table-row';
+                    
+                    const today = new Date().toISOString().split('T')[0];
+                    const sevenDaysFromNow = new Date();
+                    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+                    const sevenDaysFromNowString = sevenDaysFromNow.toISOString().split('T')[0];
+
+                    const isExpired = student.expiryDate < today;
+                    const isPremium = student.plan === 'Premium';
+                    const isExpiringSoon = student.expiryDate >= today && student.expiryDate <= sevenDaysFromNowString && !isPremium;
+
+                    if (isPremium) {
+                        row.classList.add('premium-row');
+                    } else if (isExpired) {
+                        row.classList.add('expired-row');
+                    } else if (isExpiringSoon) {
+                        row.classList.add('expiring-soon-row');
+                    } else {
+                        row.classList.add('active-row');
+                    }
+
+                    const statusBadge = this.getStatusBadge(student);
+                    const originalIndex = this.students.findIndex(s => s.id === student.id);
+
+                    row.innerHTML = `
+                        <td class="px-8 py-4 whitespace-nowrap text-sm font-bold text-gray-800">${index + 1}</td>
+                        <td class="px-8 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center mr-3">
+                                    <span class="text-white font-bold text-sm">${student.name.charAt(0).toUpperCase()}</span>
+                                </div>
+                                <span class="text-sm font-semibold text-gray-800">${student.name}</span>
+                            </div>
+                        </td>
+                        <td class="px-8 py-4 whitespace-nowrap text-sm text-gray-800 font-medium">${student.plan}</td>
+                        <td class="px-8 py-4 whitespace-nowrap text-sm text-gray-800 font-bold">₹${student.fees || 0}</td>
+                        <td class="px-8 py-4 whitespace-nowrap text-sm text-gray-600">${this.formatDate(student.recentPayment)}</td>
+                        <td class="px-8 py-4 whitespace-nowrap text-sm text-gray-600">${this.formatDate(student.expiryDate)}</td>
+                        <td class="px-8 py-4 whitespace-nowrap">${statusBadge}</td>
+                        <td class="px-8 py-4 whitespace-nowrap text-sm">
+                            <div class="flex space-x-3 fade-in-actions">
+                                <button onclick="dashboard.editStudent(${originalIndex})" 
+                                        class="bg-blue-100 hover:bg-blue-200 text-blue-700 p-2 rounded-lg transition-all duration-200">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                                    </svg>
+                                </button>
+                                <button onclick="dashboard.deleteStudent(${originalIndex})" 
+                                        class="bg-red-100 hover:bg-red-200 text-red-700 p-2 rounded-lg transition-all duration-200">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" clip-rule="evenodd"/>
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414L9.586 12l-3.293 3.293a1 1 0 101.414 1.414L10 13.414l2.293 2.293a1 1 0 001.414-1.414L10.414 12l2.293-2.293z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+
+                    tbody.appendChild(row);
+                });
+            }
+
+            getStatusBadge(student) {
+                const today = new Date().toISOString().split('T')[0];
+                const sevenDaysFromNow = new Date();
+                sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+                const sevenDaysFromNowString = sevenDaysFromNow.toISOString().split('T')[0];
+
+                const isExpired = student.expiryDate < today;
+                const isPremium = student.plan === 'Premium';
+                const isExpiringSoon = student.expiryDate >= today && student.expiryDate <= sevenDaysFromNowString && !isPremium;
+
+                if (isPremium) {
+                    return '<span class="status-badge status-premium">Premium</span>';
+                } else if (isExpired) {
+                    return '<span class="status-badge status-expired">Expired</span>';
+                } else if (isExpiringSoon) {
+                    return '<span class="status-badge status-expiring">Expiring Soon</span>';
+                } else {
+                    return '<span class="status-badge status-active">Active</span>';
+                }
+            }
+
+            formatDate(dateString) {
+                const options = { year: 'numeric', month: 'short', day: 'numeric' };
+                return new Date(dateString).toLocaleDateString('en-US', options);
+            }
+
+            editStudent(index) {
+                this.editingIndex = index;
+                const student = this.students[index];
+
+                document.getElementById('editName').value = student.name;
+                document.getElementById('editPlan').value = student.plan;
+                document.getElementById('editFees').value = student.fees || '';
+                document.getElementById('editRecentPayment').value = student.recentPayment;
+                document.getElementById('editExpiryDate').value = student.expiryDate;
+
+                this.showEditModal();
+            }
+
+            updateStudent() {
+                if (this.editingIndex >= 0) {
+                    this.students[this.editingIndex] = {
+                        ...this.students[this.editingIndex],
+                        name: document.getElementById('editName').value,
+                        plan: document.getElementById('editPlan').value,
+                        fees: parseFloat(document.getElementById('editFees').value) || 0,
+                        recentPayment: document.getElementById('editRecentPayment').value,
+                        expiryDate: document.getElementById('editExpiryDate').value
+                    };
+
+                    this.applyFiltersAndSearch();
+                    this.updateMetrics();
+                    this.hideEditModal();
+                    this.editingIndex = -1;
+                    this.showSuccessMessage('Student updated successfully!');
+                }
+            }
+
+            deleteStudent(index) {
+                if (confirm('Are you sure you want to delete this student?')) {
+                    this.students.splice(index, 1);
+                    this.applyFiltersAndSearch();
+                    this.updateMetrics();
+                    this.showSuccessMessage('Student deleted successfully!');
+                }
+            }
+
+            clearAllData() {
+                if (confirm('Are you sure you want to delete all student data? This action cannot be undone.')) {
+                    this.students = [];
+                    this.applyFiltersAndSearch();
+                    this.updateMetrics();
+                    this.showSuccessMessage('All data cleared successfully!');
+                }
+            }
+
+            addSampleData() {
+                const sampleStudents = [
+                    {
+                        id: Date.now() + 1,
+                        name: "Rahul Sharma",
+                        plan: "Premium",
+                        fees: 5000,
+                        recentPayment: "2024-12-01",
+                        expiryDate: "2025-01-01"
+                    },
+                    {
+                        id: Date.now() + 2,
+                        name: "Priya Patel",
+                        plan: "Four times a week",
+                        fees: 3000,
+                        recentPayment: "2024-11-15",
+                        expiryDate: "2024-12-15"
+                    },
+                    {
+                        id: Date.now() + 3,
+                        name: "Amit Kumar",
+                        plan: "Twice a week",
+                        fees: 2000,
+                        recentPayment: "2024-11-01",
+                        expiryDate: "2024-11-30"
+                    },
+                    {
+                        id: Date.now() + 4,
+                        name: "Sneha Gupta",
+                        plan: "Everyday",
+                        fees: 4000,
+                        recentPayment: "2024-12-10",
+                        expiryDate: "2025-01-10"
+                    },
+                    {
+                        id: Date.now() + 5,
+                        name: "Vikash Singh",
+                        plan: "Premium",
+                        fees: 5500,
+                        recentPayment: "2024-11-20",
+                        expiryDate: "2024-12-20"
+                    }
+                ];
+
+                this.students.push(...sampleStudents);
+                this.applyFiltersAndSearch();
+                this.updateMetrics();
+                this.showSuccessMessage('Sample data added successfully!');
+            }
+
+            showEditModal() {
+                document.getElementById('editModal').classList.remove('hidden');
+            }
+
+            hideEditModal() {
+                document.getElementById('editModal').classList.add('hidden');
+            }
+
+            updateMetrics() {
+                const today = new Date().toISOString().split('T')[0];
+                const sevenDaysFromNow = new Date();
+                sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+                const sevenDaysFromNowString = sevenDaysFromNow.toISOString().split('T')[0];
+
+                const totalStudents = this.students.length;
+                const activeCount = this.students.filter(student => 
+                    student.expiryDate >= today && student.plan !== 'Premium' && 
+                    student.expiryDate > sevenDaysFromNowString
+                ).length;
+                const premiumCount = this.students.filter(student => student.plan === 'Premium').length;
+                const expiredCount = this.students.filter(student => student.expiryDate < today).length;
+                const expiringSoonCount = this.students.filter(student => 
+                    student.expiryDate >= today && student.expiryDate <= sevenDaysFromNowString && 
+                    student.plan !== 'Premium'
+                ).length;
+
+                document.getElementById('totalStudents').textContent = totalStudents;
+                document.getElementById('activeStudents').textContent = activeCount;
+                document.getElementById('premiumStudents').textContent = premiumCount;
+                document.getElementById('expiredStudents').textContent = expiredCount;
+                document.getElementById('expiringSoon').textContent = expiringSoonCount;
+            }
+
+            updateShowingCount() {
+                document.getElementById('showingCount').textContent = `${this.filteredStudents.length} students`;
+            }
+
+            async importFromExcel(file) {
+                if (!file) return;
+
+                if (!file.name.match(/\.(xlsx|xls)$/)) {
+                    this.showErrorMessage('Please select a valid Excel file (.xlsx or .xls)');
+                    return;
+                }
+
+                try {
+                    const data = await this.readExcelFile(file);
+                    const importedStudents = this.parseExcelData(data);
+                    
+                    if (importedStudents.length > 0) {
+                        this.students.push(...importedStudents);
+                        this.applyFiltersAndSearch();
+                        this.updateMetrics();
+                        this.showSuccessMessage(`Successfully imported ${importedStudents.length} students!`);
+                    } else {
+                        this.showErrorMessage('No valid student data found in the Excel file');
+                    }
+                    
+                    // Clear the file input
+                    document.getElementById('importFile').value = '';
+                } catch (error) {
+                    console.error('Import error:', error);
+                    this.showErrorMessage('Failed to import Excel file. Please check the file format.');
+                }
+            }
+
+            readExcelFile(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const data = new Uint8Array(e.target.result);
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const firstSheetName = workbook.SheetNames[0];
+                            const worksheet = workbook.Sheets[firstSheetName];
+                            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                            resolve(jsonData);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                    reader.onerror = reject;
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            parseExcelData(data) {
+                const importedStudents = [];
+                
+                data.forEach((row, index) => {
+                    // Skip empty rows and header-like rows
+                    if (!row || typeof row !== 'object') return;
+                    
+                    // Try to identify columns flexibly
+                    const name = this.findColumnValue(row, ['name', 'student name', 'student', 'Name', 'Student Name']);
+                    const plan = this.findColumnValue(row, ['plan', 'membership plan', 'Plan', 'Membership Plan']);
+                    const fees = this.findColumnValue(row, ['fees', 'monthly fees', 'Fees', 'Monthly Fees']);
+                    const recentPayment = this.findColumnValue(row, ['recent payment', 'payment date', 'Recent Payment', 'Date of Recent Payment']);
+                    const expiryDate = this.findColumnValue(row, ['expiry date', 'expiry', 'Expiry Date', 'Date of Expiry']);
+                    
+                    // Validate required fields
+                    if (!name || !plan || !recentPayment || !expiryDate) {
+                        return; // Skip invalid rows
+                    }
+
+                    // Parse and validate dates
+                    let parsedRecentPayment, parsedExpiryDate;
+                    try {
+                        parsedRecentPayment = this.parseExcelDate(recentPayment);
+                        parsedExpiryDate = this.parseExcelDate(expiryDate);
+                    } catch (error) {
+                        return; // Skip rows with invalid dates
+                    }
+
+                    // Parse fees
+                    let parsedFees = 0;
+                    if (fees) {
+                        const feeString = fees.toString().replace(/[₹,]/g, '');
+                        parsedFees = parseFloat(feeString) || 0;
+                    }
+
+                    // Validate plan
+                    const validPlans = ['Twice a week', 'Four times a week', 'Everyday', 'Premium'];
+                    if (!validPlans.includes(plan)) {
+                        return; // Skip rows with invalid plans
+                    }
+
+                    importedStudents.push({
+                        id: Date.now() + index + Math.random(),
+                        name: name.toString().trim(),
+                        plan: plan.toString().trim(),
+                        fees: parsedFees,
+                        recentPayment: parsedRecentPayment,
+                        expiryDate: parsedExpiryDate
+                    });
+                });
+
+                return importedStudents;
+            }
+
+            findColumnValue(row, possibleKeys) {
+                for (const key of possibleKeys) {
+                    if (row.hasOwnProperty(key) && row[key] !== null && row[key] !== undefined && row[key] !== '') {
+                        return row[key];
+                    }
+                }
+                return null;
+            }
+
+            parseExcelDate(dateValue) {
+                if (!dateValue) throw new Error('Invalid date');
+
+                // If it's already a date string in YYYY-MM-DD format
+                if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+                    return dateValue;
+                }
+
+            parseExcelDate(dateValue) {
+                if (!dateValue) throw new Error('Invalid date');
+
+                // If it's already a date string in YYYY-MM-DD format
+                if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+                    return dateValue;
+                }
+
+                // If it's an Excel date number
+                if (typeof dateValue === 'number') {
+                    const date = XLSX.SSF.parse_date_code(dateValue);
+                    if (date) {
+                        return `${date.y}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`;
+                    }
+                }
+
+                // Try to parse as a regular date
+                const date = new Date(dateValue);
+                if (!isNaN(date.getTime())) {
+                    return date.toISOString().split('T')[0];
+                }
+
+                throw new Error('Invalid date format');
+            }
+
+            showSuccessMessage(message) {
+                const successDiv = document.createElement('div');
+                successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 slide-in';
+                successDiv.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414L9.586 12l-3.293 3.293a1 1 0 101.414 1.414L10 13.414l2.293 2.293a1 1 0 001.414-1.414L10.414 12l2.293-2.293z"/>
+                        </svg>
+                        <span>${message}</span>
+                    </div>
+                `;
+                document.body.appendChild(successDiv);
+
+                setTimeout(() => {
+                    successDiv.remove();
+                }, 4000);
+            }
+
+            showErrorMessage(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 slide-in';
+                errorDiv.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"/>
+                        </svg>
+                        <span>${message}</span>
+                    </div>
+                `;
+                document.body.appendChild(errorDiv);
+
+                setTimeout(() => {
+                    errorDiv.remove();
+                }, 4000);
+            }
+
+            exportToExcel() {
+                if (this.students.length === 0) {
+                    this.showErrorMessage('No data to export!');
+                    return;
+                }
+
+                const workbook = XLSX.utils.book_new();
+                
+                // Prepare data for export
+                const exportData = this.students.map((student, index) => ({
+                    'Sr.No.': index + 1,
+                    'Name': student.name,
+                    'Plan': student.plan,
+                    'Monthly Fees': `₹${student.fees || 0}`,
+                    'Date of Recent Payment': student.recentPayment,
+                    'Date of Expiry': student.expiryDate
+                }));
+
+                // Add summary statistics
+                const today = new Date().toISOString().split('T')[0];
+                const sevenDaysFromNow = new Date();
+                sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+                const sevenDaysFromNowString = sevenDaysFromNow.toISOString().split('T')[0];
+
+                const totalStudents = this.students.length;
+                const activeCount = this.students.filter(student => 
+                    student.expiryDate >= today && student.plan !== 'Premium' && 
+                    student.expiryDate > sevenDaysFromNowString
+                ).length;
+                const premiumCount = this.students.filter(student => student.plan === 'Premium').length;
+                const expiredCount = this.students.filter(student => student.expiryDate < today).length;
+                const expiringSoonCount = this.students.filter(student => 
+                    student.expiryDate >= today && student.expiryDate <= sevenDaysFromNowString && 
+                    student.plan !== 'Premium'
+                ).length;
+
+                // Add empty row and summary
+                exportData.push({}, {
+                    'Sr.No.': '',
+                    'Name': 'SUMMARY',
+                    'Plan': '',
+                    'Monthly Fees': '',
+                    'Date of Recent Payment': '',
+                    'Date of Expiry': ''
+                }, {
+                    'Sr.No.': '',
+                    'Name': 'Total Students:',
+                    'Plan': totalStudents,
+                    'Monthly Fees': '',
+                    'Date of Recent Payment': '',
+                    'Date of Expiry': ''
+                }, {
+                    'Sr.No.': '',
+                    'Name': 'Active Students:',
+                    'Plan': activeCount,
+                    'Monthly Fees': '',
+                    'Date of Recent Payment': '',
+                    'Date of Expiry': ''
+                }, {
+                    'Sr.No.': '',
+                    'Name': 'Premium Members:',
+                    'Plan': premiumCount,
+                    'Monthly Fees': '',
+                    'Date of Recent Payment': '',
+                    'Date of Expiry': ''
+                }, {
+                    'Sr.No.': '',
+                    'Name': 'Expiring Soon:',
+                    'Plan': expiringSoonCount,
+                    'Monthly Fees': '',
+                    'Date of Recent Payment': '',
+                    'Date of Expiry': ''
+                }, {
+                    'Sr.No.': '',
+                    'Name': 'Expired:',
+                    'Plan': expiredCount,
+                    'Monthly Fees': '',
+                    'Date of Recent Payment': '',
+                    'Date of Expiry': ''
+                });
+
+                const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+                // Set column widths
+                const colWidths = [
+                    { wch: 8 },  // Sr.No.
+                    { wch: 25 }, // Name
+                    { wch: 20 }, // Plan
+                    { wch: 15 }, // Monthly Fees
+                    { wch: 20 }, // Recent Payment
+                    { wch: 15 }  // Expiry Date
+                ];
+                worksheet['!cols'] = colWidths;
+
+                // Get the range of the worksheet
+                const range = XLSX.utils.decode_range(worksheet['!ref']);
+                
+                // Apply header formatting
+                for (let col = range.s.c; col <= range.e.c; col++) {
+                    const headerCell = XLSX.utils.encode_cell({ r: 0, c: col });
+                    if (worksheet[headerCell]) {
+                        worksheet[headerCell].s = {
+                            font: { bold: true, color: { rgb: "FFFFFF" } },
+                            fill: { fgColor: { rgb: "4F46E5" } },
+                            alignment: { horizontal: "center", vertical: "center" },
+                            border: {
+                                left: { style: "thin", color: { rgb: "000000" } },
+                                right: { style: "thin", color: { rgb: "000000" } },
+                                top: { style: "thin", color: { rgb: "000000" } },
+                                bottom: { style: "thin", color: { rgb: "000000" } }
+                            }
+                        };
+                    }
+                }
+
+                // Apply row colors and formatting based on student status
+                for (let row = 1; row <= this.students.length; row++) {
+                    const student = this.students[row - 1];
+                    const today = new Date().toISOString().split('T')[0];
+                    const sevenDaysFromNow = new Date();
+                    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+                    const sevenDaysFromNowString = sevenDaysFromNow.toISOString().split('T')[0];
+
+                    const isExpired = student.expiryDate < today;
+                    const isPremium = student.plan === 'Premium';
+                    const isExpiringSoon = student.expiryDate >= today && student.expiryDate <= sevenDaysFromNowString && !isPremium;
+
+                    let fillColor = 'FFFFFF'; // Default white
+                    let borderColor = '000000'; // Default black border
+                    
+                    // Determine colors based on status (Premium takes priority)
+                    if (isPremium) {
+                        fillColor = 'FEF3C7'; // Gold/Yellow for Premium
+                        borderColor = 'F59E0B'; // Orange border
+                    } else if (isExpired) {
+                        fillColor = 'FECACA'; // Red for Expired
+                        borderColor = 'EF4444'; // Red border
+                    } else if (isExpiringSoon) {
+                        fillColor = 'FED7AA'; // Orange for Expiring Soon
+                        borderColor = 'F97316'; // Orange border
+                    } else {
+                        fillColor = 'DCFCE7'; // Green for Active
+                        borderColor = '22C55E'; // Green border
+                    }
+
+                    // Apply formatting to all cells in the row
+                    for (let col = range.s.c; col <= range.e.c; col++) {
+                        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                        if (worksheet[cellAddress]) {
+                            worksheet[cellAddress].s = {
+                                fill: { fgColor: { rgb: fillColor } },
+                                border: {
+                                    left: { style: "thin", color: { rgb: borderColor } },
+                                    right: { style: "thin", color: { rgb: borderColor } },
+                                    top: { style: "thin", color: { rgb: borderColor } },
+                                    bottom: { style: "thin", color: { rgb: borderColor } }
+                                },
+                                alignment: { horizontal: "left", vertical: "center" },
+                                font: { color: { rgb: "000000" } }
+                            };
+                        }
+                    }
+                }
+
+                // Format summary section
+                const summaryStartRow = this.students.length + 2;
+                for (let row = summaryStartRow; row <= range.e.r; row++) {
+                    for (let col = range.s.c; col <= range.e.c; col++) {
+                        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+                        if (worksheet[cellAddress]) {
+                            worksheet[cellAddress].s = {
+                                font: { bold: true, color: { rgb: "FFFFFF" } },
+                                fill: { fgColor: { rgb: "6B7280" } }, // Gray background
+                                alignment: { horizontal: "left", vertical: "center" },
+                                border: {
+                                    left: { style: "thin", color: { rgb: "000000" } },
+                                    right: { style: "thin", color: { rgb: "000000" } },
+                                    top: { style: "thin", color: { rgb: "000000" } },
+                                    bottom: { style: "thin", color: { rgb: "000000" } }
+                                }
+                            };
+                        }
+                    }
+                }
+
+                // Add worksheet to workbook
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'RCC01 Student Data');
+                
+                // Generate filename with current date
+                const currentDate = new Date().toISOString().split('T')[0];
+                const filename = `RCC01_Student_Data_${currentDate}.xlsx`;
+                
+                // Write file with proper formatting
+                XLSX.writeFile(workbook, filename, {
+                    cellStyles: true,
+                    sheetStubs: false
+                });
+                
+                this.showSuccessMessage(`Excel file exported successfully as ${filename}!`);
+            }
+        }
+
+        // Initialize the dashboard
+        const dashboard = new StudentDashboard();
+    </script>
+</body>
+</html>wider cursor-pointer hover:bg-white/5" data-sort="index">#</th>
+                            <th class="px-8 py-4 text-left text-sm font-bold text-white/90 uppercase tracking-wider cursor-pointer hover:bg-white/5" data-sort="name">Student Name</th>
+                            <th class="px-8 py-4 text-left text-sm font-bold text-white/90 uppercase tracking-wider cursor-pointer hover:bg-white/5" data-sort="plan">Plan</th>
+                            <th class="px-8 py-4 text-left text-sm font-bold text-white/90 uppercase tracking-wider cursor-pointer hover:bg-white/5" data-sort="fees">Monthly Fees</th>
+                            <th class="px-8 py-4 text-left text-sm font-bold text-white/90 uppercase tracking-wider cursor-pointer hover:bg-white/5" data-sort="payment">Recent Payment</th>
+                            <th class="px-8 py-4 text-left text-sm font-bold text-white/90 uppercase tracking-wider cursor-pointer hover:bg-white/5" data-sort="expiry">Expiry Date</th>
+                            <th class="px-8 py-4 text-left text-sm font-bold text-white/90 uppercase tracking-wider">Status</th>
+                            <th class="px-8 py-4 text-left text-sm font-bold text-white/90 uppercase tracking-
